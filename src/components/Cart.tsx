@@ -54,7 +54,7 @@ const handleCheckout=async()=>{
                           <h4>${product.price}</h4>
                         </div>
                         <div className='flex bottom mt-2'>
-                          <div className='quantity-desc'>
+                          <div className='quantity-desc flex items-center'>
                             <span className='minus'  onClick={()=> toggleCartItemQty(product._id,'minus')}>
                               <AiOutlineMinus />
                             </span>
