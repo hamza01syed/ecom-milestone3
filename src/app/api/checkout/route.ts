@@ -1,7 +1,7 @@
 import { NextResponse, NextRequest } from 'next/server';
 const stripe = require('stripe')(process.env.NEXT_STRIPE_SECRET_KEY);
 
-export const POST = async (request: NextRequest) => {
+export const POST = async (request: { json: () => PromiseLike<{ products: any; }> | { products: any; }; }) => {
   // Use .json() method to parse the body
   const { products } = await request.json();
   
