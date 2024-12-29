@@ -15,7 +15,7 @@ export const POST = async (request: { json: () => PromiseLike<{ products: any; }
     }
 
     // Fetch active products from Stripe
-    let activeProducts = await stripe.products.list({ active: true });
+    const activeProducts = await stripe.products.list({ active: true });
 
     // Match or create products in Stripe
     const productPromises = products.map(async (product) => {
