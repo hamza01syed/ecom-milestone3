@@ -1,7 +1,4 @@
 import { client } from '@/sanity/lib/client'
-import { urlFor } from '@/sanity/lib/image'
-import Image from 'next/image'
-import Link from 'next/link'
 import React from 'react'
 import Card from './Card'
 

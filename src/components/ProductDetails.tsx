@@ -9,7 +9,7 @@ import { urlFor } from '@/sanity/lib/image';
 
 const ProductDetails = ({product}:any) => {
     const [index,setIndex] = useState(0);
-    const { cartItems, addProduct, qty, decQty, incQty}:any = useContext(CartContext);
+    const {  addProduct, qty, decQty, incQty}:any = useContext(CartContext);
     // console.log(cartItems);
     
   return (

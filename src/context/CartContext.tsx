@@ -2,12 +2,13 @@
 import { createContext, useState } from "react";
 
 
+
 export const CartContext=createContext({})
 
 export const CartProvider=({children}:any)=>{
 
     const [showCart,setShowCart]=useState(false)
-    const [qty,setQty]=useState<any>(1)
+    const [qty,setQty]=useState<number>(1)
     const [cartItems,setCartItems]=useState<any[]>([])
     const [totalQuantity, setTotalQuantity] = useState(0);
     const [totalPrice, setTotalPrice] = useState(0);
@@ -43,7 +44,7 @@ export const CartProvider=({children}:any)=>{
     }
 
     const toggleCartItemQty = (id:any, value:any) =>{
-        let foundProduct = cartItems.find((item)=> item._id === id);
+        const foundProduct = cartItems.find((item)=> item._id === id);
         const index = cartItems.findIndex((product)=>product._id === id);
         const updatedCartItems = [...cartItems];
 
@@ -66,7 +67,7 @@ export const CartProvider=({children}:any)=>{
     }
 
     const onRemove = (product:any) => {
-        let foundProduct = cartItems.find((item)=> item._id === product._id);
+        const foundProduct = cartItems.find((item)=> item._id === product._id);
         const newCartItems = cartItems.filter((item) => item._id !== product._id);
 
         setCartItems(newCartItems);

@@ -6,7 +6,6 @@ export const POST = async (request:any) => {
   const { products } = await request.json();
   let activeProducts = await stripe.products.list({active:true});
   console.log(activeProducts)
-
   try {
        //  1. Find products from stripe that matches products from cart.
        for(const product of products){
@@ -23,6 +22,7 @@ export const POST = async (request:any) => {
                unit_amount:product.price*100
              }
            })
+           console.log(prod)
          }
    
        }
@@ -33,7 +33,7 @@ export const POST = async (request:any) => {
  
     //  3. Once the new product has been added to stripe, do FETCH Products again with updated products from stripe
     activeProducts = await stripe.products.list({active:true});
-    let stripeProducts =  []
+    const stripeProducts =  []
 
     for(const product of products){
       const stripeProduct = activeProducts?.data?.find((stripeProduct:any)=>
