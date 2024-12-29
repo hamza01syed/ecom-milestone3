@@ -1,66 +1,80 @@
-import { NextResponse } from "next/server"
-const stripe = require('stripe')(process.env.NEXT_STRIPE_SECRET_KEY);
+import { NextResponse } from "next/server";
+import Stripe from "stripe";
 
-export const POST = async (request:any) => {
+const stripe = new Stripe(process.env.NEXT_STRIPE_SECRET_KEY as string);
 
-  const { products } = await request.json();
-  let activeProducts = await stripe.products.list({active:true});
-  console.log(activeProducts)
+export const POST = async (request: { json: () => PromiseLike<{ products: any; }> | { products: any; }; }) => {
   try {
-       //  1. Find products from stripe that matches products from cart.
-       for(const product of products){
-         const matchedProducts = activeProducts?.data?.find((stripeProduct:any)=>
-               stripeProduct.name.toLowerCase() === product.name.toLowerCase()
-         )
-   
-        //  2. If product didn't exist in Stripe, then add this product to stripe.
-        if(matchedProducts == undefined){
-           const prod = await stripe.products.create({
-             name: product.name,
-             default_price_data:{
-               currency:'usd',
-               unit_amount:product.price*100
-             }
-           })
-           console.log(prod)
-         }
-   
-       }
-  } catch (error) {
-      console.log("Error in creating a new product", error);
-      throw error;
-  }
- 
-    //  3. Once the new product has been added to stripe, do FETCH Products again with updated products from stripe
-    activeProducts = await stripe.products.list({active:true});
-    const stripeProducts =  []
+    const { products } = await request.json();
 
-    for(const product of products){
-      const stripeProduct = activeProducts?.data?.find((stripeProduct:any)=>
-        stripeProduct.name.toLowerCase() === product.name.toLowerCase()
+    if (!products || !Array.isArray(products)) {
+      return NextResponse.json(
+        { error: "Invalid products data" },
+        { status: 400 }
       );
-
-      if(stripeProduct){
-        stripeProducts.push(
-          {
-            // Provide the exact Price ID (for example, pr_1234) of the product you want to sell
-            price: stripeProduct?.default_price,
-            quantity: product.quantity,
-          },
-        )
-      }
     }
 
+    // Fetch active products from Stripe
+    let activeProducts = await stripe.products.list({ active: true });
 
-      // 4. Create Checkout Sessions from body params.
-     const session = await stripe.checkout.sessions.create({
-        line_items:stripeProducts,
-        mode: 'payment',
-        success_url: `https://shop-mu-mauve.vercel.app/success`,
-        cancel_url: `https://shop-mu-mauve.vercel.app/`,
-      });
-      
-    return NextResponse.json({
-        url: session.url
-    })
-}
+    // Match or create products in Stripe
+    const productPromises = products.map(async (product) => {
+      let matchedProduct = activeProducts.data.find(
+        (stripeProduct) =>
+          stripeProduct.name.toLowerCase() === product.name.toLowerCase()
+      );
+
+      // If product doesn't exist in Stripe, create it
+      if (!matchedProduct) {
+        const newProduct = await stripe.products.create({
+          name: product.name,
+        });
+
+        const price = await stripe.prices.create({
+          product: newProduct.id,
+          currency: "usd",
+          unit_amount: product.price * 100, // converting to cents
+        });
+
+        matchedProduct = {
+          ...newProduct,
+          default_price: price.id, // Use price ID (string)
+        };
+      }
+
+      // Ensure the default_price is a valid string
+      const priceId = matchedProduct.default_price;
+
+      if (!priceId || typeof priceId !== 'string') {
+        throw new Error(`Invalid price ID for product: ${product.name}`);
+      }
+
+      return {
+        price: priceId, // Ensure this is the price ID string
+        quantity: product.quantity,
+      };
+    });
+
+    const stripeProducts = await Promise.all(productPromises);
+
+    // Create a checkout session
+    const session = await stripe.checkout.sessions.create({
+      line_items: stripeProducts.map((item) => ({
+        price: item.price, // Ensure this is a string (Price ID)
+        quantity: item.quantity,
+      })),
+      mode: "payment",
+      success_url: `https://shop-mu-mauve.vercel.app/success`,
+      cancel_url: `https://shop-mu-mauve.vercel.app/`,
+    });
+
+    return NextResponse.json({ url: session.url });
+  } catch (error) {
+    console.error("Error in /api/checkout:", error);
+
+    return NextResponse.json(
+      { error: "An error occurred while processing your request" },
+      { status: 500 }
+    );
+  }
+};
